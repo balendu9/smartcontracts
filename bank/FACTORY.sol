@@ -106,6 +106,4 @@ contract SavingsFactory is Ownable {
         }
         return newContract;
     }
-
-
 }
