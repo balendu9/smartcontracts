@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "witnet-solidity-bridge/contracts/interfaces/IWitnetRandomness.sol";
-
-
 contract MysteryBox {
     address public owner; 
-    // interface for the randomness provider
-    IWitnetRandomness public randomnessProvider;
     
     mapping(uint256 => uint256[]) public rewards; // Rewards for each box type (1 = Bronze, 2 = Silver, 3 = Gold)
     mapping(uint256 => uint256[]) public probabilities; // Probabilities for each reward type (in basis points: 100 = 1%)
 
-    
-    event BoxPlayed(address indexed player, uint256 amountPaid, uint256 reward); //Logs when a player plays the game
-    event FundsDeposited(address indexed sender, uint256 amount); //Logs when the owner deposits funds into the contract.
-    event FundsWithdrawn(address indexed recipient, uint256 amount);  //Logs when the owner withdraws funds.
+    mapping(address => uint256) public totalRewards;  // Tracks total rewards won by each player
+    mapping(address => uint256) public totalSpent;    // Tracks total amount spent by each player
+
+    event BoxPlayed(address indexed player, uint256 amountPaid, uint256 reward);
+    event FundsDeposited(address indexed sender, uint256 amount);
+    event FundsWithdrawn(address indexed recipient, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "MysteryBox: Not authorized");
@@ -27,38 +24,44 @@ contract MysteryBox {
         _;
     }
 
-
-    constructor(address _randomnessProvider) {
+    constructor() {
         owner = msg.sender;
-        randomnessProvider = IWitnetRandomness(_randomnessProvider);
     }
 
     function play() external payable {
         require(msg.value > 0, "Amount must be greater than zero");
 
-        //get the amount from the user
         uint256 amountPaid = msg.value; 
 
-        // request randomness from witnet
-        uint256 randomValue = randomnessProvider.randomize();
+        // Track the total amount spent by the player
+        totalSpent[msg.sender] += amountPaid;
 
-        // reward based on random value
+        // Generate pseudo-random number
+        uint256 randomValue = _getRandomNumber();
+
+        // Calculate reward based on random value
         uint256 reward = _calculateReward(amountPaid, randomValue);
 
-        // check if the contract has funds
         require(address(this).balance >= reward, "Contract out of funds");
-        // transfer to player
+
+        // Track the total reward won by the player
+        totalRewards[msg.sender] += reward;
+
         payable(msg.sender).transfer(reward);
 
         emit BoxPlayed(msg.sender, amountPaid, reward);
-
     }
 
+    function _getRandomNumber() private view returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(
+            block.timestamp, 
+            block.prevrandao, 
+            msg.sender,
+            block.number
+        )));
+    }
 
     function _calculateReward(uint256 amountPaid, uint256 randomValue) private pure returns (uint256 reward) {
-
-        // scaling the randomValue ot percentage (0-99)
-
         uint256 scaledRandom = randomValue % 100;
 
         if (scaledRandom < 80) {
@@ -68,8 +71,6 @@ contract MysteryBox {
         }
         return reward;
     }
-
-
 
     function withdrawFunds(uint256 amount) external onlyOwner hasSufficientFunds(amount) {
         payable(owner).transfer(amount);
@@ -82,6 +83,12 @@ contract MysteryBox {
         emit FundsWithdrawn(owner, balance);
     }
 
-     receive() external payable {}
+    function getUserStats(address player) external view returns (uint256 totalWon, uint256 totalLost) {
+        totalWon = totalRewards[player];
+        totalLost = totalSpent[player] > totalRewards[player] ? totalSpent[player] - totalRewards[player] : 0;
+        return (totalWon, totalLost);
+    }
+
+    receive() external payable {}
 
 }
