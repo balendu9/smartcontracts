@@ -163,6 +163,88 @@ contract Minigames {
         return (mysteryWon, mysteryLost);
     }
 
+
+    // --------------------- Lotto Game ---------------------
+
+
+    uint256 public gameFee = 0.01 ether;
+
+    mapping(address => uint256) public LottoRewards;
+    mapping(address => uint256) public LottoSpent;
+
+    event LottoPlayed(address indexed player, uint8[6] userNumbers, uint8[6] winningNumbers, uint256 reward);
+    /**
+     * @dev Function to play the lotto game.
+     * The player provides 6 chosen numbers and pays the game fee.
+     * The contract generates 6 random winning numbers and calculates rewards.
+     * 
+     * @param userNumbers The array of 6 numbers chosen by the player (values between 1-49).
+     */
+    function playLotto(uint8[6] memory userNumbers) external payable {
+        require(msg.value == gameFee, "Incorrect game fee");
+
+        uint256 randomness = _getRandomNumber();
+
+        uint8[6] memory winningNumbers;
+        winningNumbers[0] = uint8(randomness % 49) + 1;
+        winningNumbers[1] = uint8((randomness / 49) % 49) + 1;
+        winningNumbers[2] = uint8((randomness / 49**2) % 49) + 1;
+        winningNumbers[3] = uint8((randomness / 49**3) % 49) + 1;
+        winningNumbers[4] = uint8((randomness / 49**4) % 49) + 1;
+        winningNumbers[5] = uint8((randomness / 49**5) % 49) + 1;
+
+        uint256 matches = _countMatches(userNumbers, winningNumbers);
+
+        uint256 reward = 0;
+
+        if (matches == 6) {
+            reward = msg.value * 10;  // Jackpot: 10x reward
+        } else if (matches == 4) {
+            reward = msg.value * 5;   // 4 matches: 5x reward
+        } else if (matches == 2) {
+            reward = msg.value * 2;   // 2 matches: 2x reward
+        }
+
+        if (reward > 0) {
+            require(address(this).balance >= reward, "Insufficient contract balance");
+            totalWon[msg.sender] += reward;
+            LottoRewards[msg.sender] += reward;
+            payable(msg.sender).transfer(reward);
+        } else {
+            totalLost[msg.sender] += msg.value;
+            LottoSpent[msg.sender] += msg.value;
+        }
+
+        emit LottoPlayed(msg.sender, userNumbers, winningNumbers, reward);
+
+
+    }
+
+
+    function _countMatches(uint8[6] memory userNumbers, uint8[6] memory winningNumbers) 
+        private 
+        pure 
+        returns (uint256 count) 
+    {
+        for (uint8 i = 0; i < 6; i++) {
+            for (uint8 j = 0; j < 6; j++) {
+                if (userNumbers[i] == winningNumbers[j]) {
+                    count++;
+                    break;  // Avoid duplicate counting
+                }
+            }
+        }
+    }
+
+    function getUserStatsForLotto(address player) external view returns (uint256 LottoWon, uint256 LottoLost) {
+        LottoWon = LottoRewards[player];
+        LottoLost = LottoSpent[player] > LottoRewards[player] ? LottoSpent[player] - mysteryRewards[player] : 0;
+        return (LottoWon, LottoLost);
+    }
+
+
+
+
     /**
      * @notice Retrieves a user's overall statistics across all games.
      * @param user The address of the user.
@@ -172,4 +254,5 @@ contract Minigames {
     function getUserStats(address user) public view returns (uint256 won, uint256 lost) {
         return (totalWon[user], totalLost[user]);
     }
+
 }
