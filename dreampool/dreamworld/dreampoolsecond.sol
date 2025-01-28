@@ -125,21 +125,19 @@ contract DreamPool {
         
     }
 
+    // function getTimerPoolById(uint256 _poolId) external view returns (Pool memory) {
+    //     require(_poolId <= poolIdCounter, "Invalid Pool ID");
+    //     Pool storage pool = pools[_poolId];
+    //     require(!pool.isGoalBased, "Not a Timer-based Pool");
+    //     return pool;
+    // }
 
-
-    function getTimerPoolById(uint256 _poolId) external view returns (Pool memory) {
-        require(_poolId <= poolIdCounter, "Invalid Pool ID");
-        Pool storage pool = pools[_poolId];
-        require(!pool.isGoalBased, "Not a Timer-based Pool");
-        return pool;
-    }
-
-    function getGoalPoolById(uint256 _poolId) external view returns (Pool memory) {
-        require(_poolId <= poolIdCounter, "Invalid Pool ID");
-        Pool storage pool = pools[_poolId];
-        require(pool.isGoalBased, "Not a Goal-based Pool");
-        return pool;
-    }
+    // function getGoalPoolById(uint256 _poolId) external view returns (Pool memory) {
+    //     require(_poolId <= poolIdCounter, "Invalid Pool ID");
+    //     Pool storage pool = pools[_poolId];
+    //     require(pool.isGoalBased, "Not a Goal-based Pool");
+    //     return pool;
+    // }
 
     function getAllTimerPools() external view returns (Pool[] memory) {
         
@@ -188,6 +186,38 @@ contract DreamPool {
             allPools[i] = pools[i];
         }
         return allPools;
+    }
+
+
+    function getPoolById(uint256 _poolId) external view returns (
+        uint256 poolId,
+        uint256 entryFee,
+        uint256 totalAmount,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 goalAmount,
+        uint256 reward50Percent,
+        uint256 reward15Percent,
+        uint256 reward5Percent,
+        uint256 rewardTreasury,
+        bool isGoalBased,
+        bool isCompleted
+    ) {
+        Pool storage pool = pools[_poolId];
+        return (
+            pool.poolId,
+            pool.entryFee,
+            pool.totalAmount,
+            pool.startTime,
+            pool.endTime,
+            pool.goalAmount,
+            pool.reward50Percent,
+            pool.reward15Percent,
+            pool.reward5Percent,
+            pool.rewardTreasury,
+            pool.isGoalBased,
+            pool.isCompleted
+        );
     }
     receive() external payable{}
 
