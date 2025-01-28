@@ -128,18 +128,21 @@ contract DreamPool {
 
 
     function getTimerPoolById(uint256 _poolId) external view returns (Pool memory) {
+        require(_poolId <= poolIdCounter, "Invalid Pool ID");
         Pool storage pool = pools[_poolId];
         require(!pool.isGoalBased, "Not a Timer-based Pool");
         return pool;
     }
 
     function getGoalPoolById(uint256 _poolId) external view returns (Pool memory) {
+        require(_poolId <= poolIdCounter, "Invalid Pool ID");
         Pool storage pool = pools[_poolId];
         require(pool.isGoalBased, "Not a Goal-based Pool");
         return pool;
     }
 
     function getAllTimerPools() external view returns (Pool[] memory) {
+        
         uint256 timerPoolsCount = 0;
         for (uint256 i = 0; i < poolIdCounter; i++) {
             if (!pools[i].isGoalBased) {
