@@ -6,6 +6,8 @@ contract DreamPool {
     address public owner;
     uint256 public poolIdCounter;
 
+    mapping(address => bool) public whitelisted;
+
     struct Pool {
         uint256 poolId;
         uint256 entryFee;
@@ -81,6 +83,10 @@ contract DreamPool {
 
         pool.participants.push(msg.sender);
         pool.totalAmount += msg.value;
+
+        if (!whitelisted[msg.sender]) {
+            whitelisted[msg.sender] = true;
+        }
     }
 
     function closePool(uint256 _poolId) external onlyOwner {
@@ -219,6 +225,77 @@ contract DreamPool {
             pool.isCompleted
         );
     }
+
+
+
+
+
+
+// game for users
+
+
+
+
+
+event gamePlayed(address indexed player, uint256 amountPaid, uint256 reward);
+
+
+function playGame() external payable {
+    require(msg.value > 0, "Amount must be greater than zero");
+    uint256 amountPaid = msg.value;
+    uint256 randomValue = _getRandomNumber() % 100;
+
+    uint256 reward;
+    if (randomValue > 70 && randomValue < 80) {
+            // 80% chance for a smaller reward
+            reward = amountPaid * (25 + (randomValue % 75)) / 100; 
+        } else {
+            // 20% chance for a larger reward
+            reward = amountPaid * (100 + (randomValue % 100)) / 100;
+        }
+
+
+    payable(msg.sender).transfer(reward);
+    emit gamePlayed(msg.sender, amountPaid, reward);
+
+}
+
+
+
+
+    // airdrop
+
+
+    mapping(address => bool) public hasClaimed;
+
+
+    uint256 public airdropAmount;
+    uint256 public airdropStartTime;
+    event AirdropClaimed(address indexed claimant, uint256 amount);
+    function claimAirdrop() external {
+        require(whitelisted[msg.sender], "You are not qualified, try taking part in any pool");
+        require(!hasClaimed[msg.sender], "You have alredy calimed the reward");
+        require(address(this).balance >= airdropAmount, "Insufficient airdrop funds");
+        require(block.timestamp >= airdropStartTime, "Airdrop has not started yet");
+        require(block.timestamp <= airdropStartTime + 3600, "Damm you missed it this time");
+        hasClaimed[msg.sender] = true;
+
+        payable(msg.sender).transfer(airdropAmount);
+
+        emit AirdropClaimed(msg.sender, airdropAmount);
+
+    } 
+
+
+
+    function setAirdropDetails(uint256 _newAmount, uint256 _newStartTime) external onlyOwner {
+        airdropAmount = _newAmount;
+        airdropStartTime= _newStartTime;
+    }
+
+
+
+
     receive() external payable{}
 
 
