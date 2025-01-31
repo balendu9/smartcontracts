@@ -7,6 +7,7 @@ contract DreamPool {
     uint256 public poolIdCounter;
 
     mapping(address => bool) public whitelisted;
+    address[] public whitelistedUsers;
 
     struct Pool {
         uint256 poolId;
@@ -87,6 +88,7 @@ contract DreamPool {
         if (!whitelisted[msg.sender]) {
             whitelisted[msg.sender] = true;
         }
+        whitelistedUsers.push(msg.sender);
     }
 
     function closePool(uint256 _poolId) external onlyOwner {
@@ -270,7 +272,10 @@ function playGame() external payable {
 
 
     uint256 public airdropAmount;
+    uint256 public totalAmount;
     uint256 public airdropStartTime;
+    uint8 counter = 0;
+    uint8 totalClaimable=0;
     event AirdropClaimed(address indexed claimant, uint256 amount);
     function claimAirdrop() external {
         require(whitelisted[msg.sender], "You are not qualified, try taking part in any pool");
@@ -278,7 +283,9 @@ function playGame() external payable {
         require(address(this).balance >= airdropAmount, "Insufficient airdrop funds");
         require(block.timestamp >= airdropStartTime, "Airdrop has not started yet");
         require(block.timestamp <= airdropStartTime + 3600, "Damm you missed it this time");
+        require(counter <= totalClaimable, "Early bird catches the bug!! But you are late!!");  
         hasClaimed[msg.sender] = true;
+        whitelisted[msg.sender]= false;
 
         payable(msg.sender).transfer(airdropAmount);
 
@@ -288,9 +295,12 @@ function playGame() external payable {
 
 
 
-    function setAirdropDetails(uint256 _newAmount, uint256 _newStartTime) external onlyOwner {
+    function setAirdropDetails(uint256 _totalAmount, uint256 _newAmount, uint256 _newStartTime, uint8 _totalClaimable) external onlyOwner {
+        totalAmount= _totalAmount;
         airdropAmount = _newAmount;
         airdropStartTime= _newStartTime;
+        totalClaimable = _totalAmount;
+
     }
 
 
