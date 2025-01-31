@@ -276,13 +276,14 @@ function playGame() external payable {
     uint256 public airdropStartTime;
     uint8 counter = 0;
     uint8 totalClaimable=0;
+    uint256 timebound=0;
     event AirdropClaimed(address indexed claimant, uint256 amount);
     function claimAirdrop() external {
         require(whitelisted[msg.sender], "You are not qualified, try taking part in any pool");
         require(!hasClaimed[msg.sender], "You have alredy calimed the reward");
         require(address(this).balance >= airdropAmount, "Insufficient airdrop funds");
         require(block.timestamp >= airdropStartTime, "Airdrop has not started yet");
-        require(block.timestamp <= airdropStartTime + 3600, "Damm you missed it this time");
+        require(block.timestamp <= airdropStartTime + timebound, "Damm you missed it this time");
         require(counter <= totalClaimable, "Early bird catches the bug!! But you are late!!");  
         hasClaimed[msg.sender] = true;
         whitelisted[msg.sender]= false;
@@ -295,12 +296,12 @@ function playGame() external payable {
 
 
 
-    function setAirdropDetails(uint256 _totalAmount, uint256 _newAmount, uint256 _newStartTime, uint8 _totalClaimable) external onlyOwner {
+    function setAirdropDetails(uint256 _totalAmount, uint256 _newAmount, uint256 _timebound, uint256 _newStartTime, uint8 _totalClaimable) external onlyOwner {
         totalAmount= _totalAmount;
         airdropAmount = _newAmount;
         airdropStartTime= _newStartTime;
         totalClaimable = _totalAmount;
-
+        timebound = _timebound;
     }
 
 
