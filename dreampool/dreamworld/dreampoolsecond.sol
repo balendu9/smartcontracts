@@ -8,6 +8,7 @@ contract DreamPool {
 
     mapping(address => bool) public whitelisted;
     address[] public whitelistedUsers;
+    mapping(address => bool) public hasClaimed;
 
     struct Pool {
         uint256 poolId;
@@ -89,6 +90,7 @@ contract DreamPool {
             whitelisted[msg.sender] = true;
         }
         whitelistedUsers.push(msg.sender);
+        hasClaimed[msg.sender] = true;
     }
 
     function closePool(uint256 _poolId) external onlyOwner {
